@@ -1,108 +1,89 @@
-import React, { Component } from "react";
-import Cell from "./Cell";
+import React, { Component } from 'react';
+import Cell from './Cell';
 
-/*
- * It uses a Cell class (defined below) to draw individual cells of planets on the screen.
+/**
  * This is our actual game component which represents the matching game.
+ * It uses a Cell class to draw individual cells of planets on the screen.
  */
-class MatchingGame extends Component {
+export default class MatchingGame extends Component {
   constructor(props) {
     super(props);
 
-    this.clickHandler = this.clickHandler.bind(this);
-    this.previouslyShownCardIndex = -1;
-    this.matches = 0;
     this.MATCHES_LIMIT = 5;
 
-    /* Planet URLS */
-    this.planetURLS = [
-      "124555.png",
-      "124558.png",
-      "124559.png",
-      "124560.png",
-      "124582.png"
-    ];
+    this.clickHandler = this.clickHandler.bind(this);
+    this.state = this.freshState();
+  }
 
-    /* Our state */
-    this.state = {
+  freshState() {
+    return {
+      matches: 0,
+      inProcess: false,
+      prevCellIndex: -1,
       gameCellArray: this.generateGameCells()
     };
   }
 
-  /*
-   * This gets called when a user clicks any of the planet boxes.
+  /**
+   * This gets called when a user clicks on any of the planet boxes.
    */
-  clickHandler(event) {
-    var that = this;
+  clickHandler(index) {
+    // Get references to current and previous cells
+    const currCell = this.state.gameCellArray[index];
+    const prevCell = this.state.gameCellArray[this.state.prevCellIndex];
 
-    var cellIndex = event.target.id;
+    // Ignore click if already shown cell was clicked,
+    // or game is inProcess state
+    if (currCell.shown || this.state.inProcess) {
+      return;
+    }
 
-    that.setState(function(prevState, props) {
-      /* Temporarily clone state */
-      var cloneState = JSON.parse(JSON.stringify(prevState));
+    // Open current cell
+    currCell.shown = true;
 
-      /* Get reference to currently clicked cell */
-      var currentCell = cloneState.gameCellArray[cellIndex];
+    // If cell wasn't opened previously, set current as previos and return
+    if (!prevCell) {
+      this.setState({ prevCellIndex: index });
+      return;
+    }
 
-      if (
-        currentCell.shown ||
-        that.inProcess ||
-        that.matches === that.MATCHES_LIMIT
-      )
-        return;
+    // If cells match, keep both in shown state,
+    // otherwise hide them after 1 second
+    if (prevCell.planetID === currCell.planetID) {
+      // Increment matches count
+      const matches = this.state.matches + 1;
 
-      /* Open up current cell */
-      currentCell.shown = true;
-
-      /*
-       * Was there a cell already open?
-       */
-      if (that.previouslyShownCardIndex !== -1) {
-        /* Yes, there was - get reference to already opened cell */
-        var previousCell =
-          cloneState.gameCellArray[that.previouslyShownCardIndex];
-
-        /* compare planet ID of currently opened cell with planet ID of previously shown cell */
-        if (currentCell.planetID !== previousCell.planetID) {
-          /*
-           * We have a mismatch. Close both cards.
-           */
-          that.inProcess = true;
-          setTimeout(function() {
-            currentCell.shown = false;
-            previousCell.shown = false;
-            that.setState(cloneState);
-            that.inProcess = false;
-          }, 1000);
-        } else {
-          /* There is a match. Increase number of matches. */
-          if (++that.matches === that.MATCHES_LIMIT) {
-            setTimeout(function() {
-              alert("Game finished");
-            }, 500);
-          }
-        }
-
-        /* In both cases, if there was a match or no, we don't need currently to keep track of already opened cell */
-        that.previouslyShownCardIndex = -1;
+      // Check if all cells are matched and start new game,
+      // otherwise set correct state
+      if (matches === this.MATCHES_LIMIT) {
+        alert('Game finished');
+        this.setState(this.freshState);
       } else {
-        /*
-         * There was no card shown previously.
-         * So just store index of current card.
-         */
-        that.previouslyShownCardIndex = cellIndex;
+        this.setState({
+          matches: matches,
+          prevCellIndex: -1
+        });
       }
+    } else {
+      this.setState({ inProcess: true });
 
-      return cloneState;
-    });
+      setTimeout(() => {
+        prevCell.shown = false;
+        currCell.shown = false;
+
+        this.setState({
+          inProcess: false,
+          prevCellIndex: -1
+        });
+      }, 1000);
+    }
   }
 
-  /*
+  /**
    * Generate array of game cell objects.
    * Each cell object has corresponding _planetID_ which indicates which kind of planet
    * is it, a _shown_ flag which indicates if it is overturned or not and also _key_ which is used by React
    * when rendering array of elements.
-   *
    */
   generateGameCells() {
     var res = this.uniqueRandomNumbers(5, 5)
@@ -118,12 +99,12 @@ class MatchingGame extends Component {
     return res;
   }
 
-  /*
+  /**
    * Generate _howMany_ unique random numbers in the range of [0, maxValueExcl).
    * Clearly it must hold that: _howMany_<=_maxValueExcl_.
    */
   uniqueRandomNumbers(howMany, maxValueExcl) {
-    if (howMany > maxValueExcl) throw new Error("Illegal argument");
+    if (howMany > maxValueExcl) throw new Error('Illegal argument');
 
     var arr = [];
     while (arr.length < howMany) {
@@ -135,19 +116,23 @@ class MatchingGame extends Component {
   }
 
   render() {
-    const { state, planetURLS, clickHandler } = this;
+    const {
+      MATCHES_LIMIT,
+      clickHandler,
+      state: { gameCellArray }
+    } = this;
 
     return (
       <div>
-        {state.gameCellArray.map((item, index) => {
+        {gameCellArray.map((item, index) => {
           return (
             <Cell
-              src={"./assets/images/" + planetURLS[item.planetID]}
-              key={item.key}
+              src={'./assets/images/PLANET_' + item.planetID + '.png'}
+              key={index}
               shown={item.shown}
-              newline={index === 4}
+              newline={index + 1 === MATCHES_LIMIT}
+              clickHandler={() => clickHandler(index)}
               id={index}
-              clickHandler={clickHandler}
             />
           );
         })}
@@ -155,5 +140,3 @@ class MatchingGame extends Component {
     );
   }
 }
-
-export default MatchingGame;
