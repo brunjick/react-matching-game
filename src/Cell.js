@@ -11,7 +11,7 @@ import React, { Component } from 'react';
  */
 export default class Cell extends Component {
   render() {
-    const DEFAULT_BG = './assets/images/BG.jpg';
+    const DEFAULT_BG = './assets/images/BG.png';
 
     return (
       <span style={{ margin: '.2em' }}>

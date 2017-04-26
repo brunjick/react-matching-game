@@ -49,7 +49,7 @@ export default class MatchingGame extends Component {
 
     // If cells match, keep both in shown state,
     // otherwise hide them after 1 second
-    if (prevCell.planetID === currCell.planetID) {
+    if (prevCell.planetId === currCell.planetId) {
       // Increment matches count
       const matches = this.state.matches + 1;
 
@@ -81,56 +81,62 @@ export default class MatchingGame extends Component {
 
   /**
    * Generate array of game cell objects.
-   * Each cell object has corresponding _planetID_ which indicates which kind of planet
-   * is it, a _shown_ flag which indicates if it is overturned or not and also _key_ which is used by React
-   * when rendering array of elements.
    */
   generateGameCells() {
-    var res = this.uniqueRandomNumbers(5, 5)
-      .concat(this.uniqueRandomNumbers(5, 5))
-      .map(function(item, index) {
-        return {
-          shown: false,
-          planetID: item,
-          key: index
-        };
-      });
+    let planetIdsArray = [];
 
-    return res;
+    // Create initial planet ids' array
+    // [0, 0, 1, 1, 2, 2...]
+    for (let i = 0; i < this.MATCHES_LIMIT; i++) {
+      planetIdsArray.push(i);
+      planetIdsArray.push(i);
+    }
+
+    // Shuffle planet ids
+    let planetIdsShuffled = this.shuffleArray(planetIdsArray);
+
+    // Return array of game cells
+    return planetIdsShuffled.map(id => ({
+      shown: false,
+      planetId: id
+    }));
   }
 
   /**
-   * Generate _howMany_ unique random numbers in the range of [0, maxValueExcl).
-   * Clearly it must hold that: _howMany_<=_maxValueExcl_.
+   * Shuffle array randomly.
    */
-  uniqueRandomNumbers(howMany, maxValueExcl) {
-    if (howMany > maxValueExcl) throw new Error('Illegal argument');
+  shuffleArray(array) {
+    let counter = array.length;
 
-    var arr = [];
-    while (arr.length < howMany) {
-      var randomnumber = Math.floor(Math.random() * maxValueExcl);
-      if (arr.indexOf(randomnumber) > -1) continue;
-      arr[arr.length] = randomnumber;
+    // While there are elements in the array
+    while (counter > 0) {
+      // Pick a random index
+      let index = Math.floor(Math.random() * counter);
+
+      // Decrease counter by 1
+      counter--;
+
+      // And swap the last element with it
+      let temp = array[counter];
+      array[counter] = array[index];
+      array[index] = temp;
     }
-    return arr;
+
+    return array;
   }
 
   render() {
-    const {
-      MATCHES_LIMIT,
-      clickHandler,
-      state: { gameCellArray }
-    } = this;
+    const { MATCHES_LIMIT, clickHandler, state: { gameCellArray } } = this;
 
     return (
       <div>
         {gameCellArray.map((item, index) => {
           return (
             <Cell
-              src={'./assets/images/PLANET_' + item.planetID + '.png'}
+              src={'./assets/images/PLANET_' + item.planetId + '.png'}
               key={index}
               shown={item.shown}
-              newline={index + 1 === MATCHES_LIMIT}
+              newline={(index + 1) === MATCHES_LIMIT}
               clickHandler={() => clickHandler(index)}
               id={index}
             />
